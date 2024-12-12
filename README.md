@@ -1,6 +1,5 @@
 ## New York City High Volumn For-Hire Vehicle (hvfhv) Reporting
 
-http://10.0.0.38:<port_number>/hvfhv-form.html
 
 This project implements the Lambda Architecture to analyze high-volume for-hire vehicle (HVFHV) trips in New York City. It provides insights into key metrics such as average price, waiting time, trip duration, and the costs associated with tolls and congestion surcharges. These metrics are broken down by carrier, pickup location, dropoff location, and hour of the day.
 
