@@ -61,7 +61,7 @@ On the other hand, the serving layer also create tables in HBase to handle Ad-Ho
 The speed layer consists of two steps: writing incoming json data into Kafka, and reading from the Kafka message to update the batch view.
 
  - [`kafka-trip`](speed_layer/kafka-trip/src/main/java/org/example) implements a Kafka streaming buffer by getting real-time traffic data through the Socrata Open Data API. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
- - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka, extract the attributes needed, transform the attributes into row key, and increment the item records in the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`. 
+ - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka, extracts the attributes needed, transforms the attributes into row key, and increment the item records in the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`. By doing so, I can avoid using `scan` against large dataset.
 
 
 #### Run the Web App
