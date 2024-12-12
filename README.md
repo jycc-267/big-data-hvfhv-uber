@@ -46,8 +46,6 @@ Data Management:
 - This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
 
 
-![Lambda Architecture](.images/lambda.jpg)
-
 #### Batch Layer
 
 The batch layer stores the master datasets `jycchien_fhv_tripdata` and `jycchien_zone_lookup` in HDFS hosted in Azure HDInsight Clusters. 
