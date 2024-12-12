@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS jycchien_hvfhs_route_hourly;
 CREATE TABLE jycchien_hvfhs_route_hourly (
-  hvfhs_license_num STRING,
+  carrier STRING,
   pickup_zone STRING,
   dropoff_zone STRING,
   hour_in_day BIGINT,
@@ -11,14 +11,21 @@ CREATE TABLE jycchien_hvfhs_route_hourly (
   revenue_count BIGINT,
   total_revenue DOUBLE,
   trip_time_count BIGINT,
-  total_trip_time DOUBLE,
+  total_trip_time BIGINT,
   wait_time_count BIGINT,
   total_wait_time DOUBLE
-);
+)
+STORED AS ORC;
 
 INSERT OVERWRITE TABLE jycchien_hvfhs_route_hourly
 SELECT
-  hvfhs_license_num,
+  CASE
+    WHEN hvfhs_license_num = 'HV0002' THEN 'Juno'
+    WHEN hvfhs_license_num = 'HV0003' THEN 'Uber'
+    WHEN hvfhs_license_num = 'HV0004' THEN 'Via'
+    WHEN hvfhs_license_num = 'HV0005' THEN 'Lyft'
+    ELSE hvfhs_license_num
+  END AS carrier,
   pickup_zone,
   dropoff_zone,
   hour_in_day,
@@ -40,29 +47,33 @@ WHERE
   dropoff_zone IS NOT NULL AND
   hour_in_day IS NOT NULL
 GROUP BY
-  hvfhs_license_num,
+  CASE
+    WHEN hvfhs_license_num = 'HV0002' THEN 'Juno'
+    WHEN hvfhs_license_num = 'HV0003' THEN 'Uber'
+    WHEN hvfhs_license_num = 'HV0004' THEN 'Via'
+    WHEN hvfhs_license_num = 'HV0005' THEN 'Lyft'
+    ELSE hvfhs_license_num
+  END,
   pickup_zone,
   dropoff_zone,
   hour_in_day;
+
 
 DROP TABLE IF EXISTS jycchien_hvfhs_route_hourly_summary;
 CREATE EXTERNAL TABLE jycchien_hvfhs_route_hourly_summary (
   hourly_route STRING,
   congestion_surcharge_count BIGINT,
-  total_congestion_surcharge DOUBLE,
+  total_congestion_surcharge BIGINT,
   tolls_count BIGINT,
-  total_tolls DOUBLE,
+  total_tolls BIGINT,
   revenue_count BIGINT,
-  total_revenue DOUBLE,
+  total_revenue BIGINT,
   trip_time_count BIGINT,
-  total_trip_time DOUBLE,
+  total_trip_time BIGINT,
   wait_time_count BIGINT,
-  total_wait_time DOUBLE
+  total_wait_time BIGINT
 )
 STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
--- HBase has a "counter" value type that is a 64 bit integer, more suitable for arithmetic
--- Put a "b" in the hbase.columns.mapping to indicate that that value is binary
--- The Hive schema should make that column a long, which is how Hive represents 64-bit integers
 WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,
                                                 stats:congestion_surcharge_count#b,
                                                 stats:total_congestion_surcharge#b,
@@ -73,11 +84,12 @@ WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,
                                                 stats:trip_time_count#b,
                                                 stats:total_trip_time#b,
                                                 stats:wait_time_count#b,
-                                                stats:total_wait_time#b');
+                                                stats:total_wait_time#b')
+TBLPROPERTIES ('hbase.table.name' = 'jycchien_hvfhs_route_hourly_summary');
 
 INSERT OVERWRITE TABLE jycchien_hvfhs_route_hourly_summary
 SELECT
-concat_ws('|', hvfhs_license_num, pickup_zone, dropoff_zone, cast(hour_in_day as string)) as hourly_route,
+concat_ws('|', carrier, pickup_zone, dropoff_zone, cast(hour_in_day as string)) as hourly_route,
     congestion_surcharge_count,
     total_congestion_surcharge,
     tolls_count,
@@ -89,3 +101,32 @@ concat_ws('|', hvfhs_license_num, pickup_zone, dropoff_zone, cast(hour_in_day as
     wait_time_count,
     total_wait_time
 FROM jycchien_hvfhs_route_hourly;
+
+
+DROP TABLE IF EXISTS jycchien_hvfhs_route_hourly_summary_speed;
+CREATE EXTERNAL TABLE jycchien_hvfhs_route_hourly_summary_speed (
+  hourly_route STRING,
+  congestion_surcharge_count BIGINT,
+  total_congestion_surcharge BIGINT,
+  tolls_count BIGINT,
+  total_tolls BIGINT,
+  revenue_count BIGINT,
+  total_revenue BIGINT,
+  trip_time_count BIGINT,
+  total_trip_time BIGINT,
+  wait_time_count BIGINT,
+  total_wait_time BIGINT
+)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,
+                                                stats:congestion_surcharge_count#b,
+                                                stats:total_congestion_surcharge#b,
+                                                stats:tolls_count#b,
+                                                stats:total_tolls#b,
+                                                stats:revenue_count#b,
+                                                stats:total_revenue#b,
+                                                stats:trip_time_count#b,
+                                                stats:total_trip_time#b,
+                                                stats:wait_time_count#b,
+                                                stats:total_wait_time#b')
+TBLPROPERTIES ('hbase.table.name' = 'jycchien_hvfhs_route_hourly_summary_speed');

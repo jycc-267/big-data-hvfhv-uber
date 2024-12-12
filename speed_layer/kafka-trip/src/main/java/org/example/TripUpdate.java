@@ -21,7 +21,7 @@ public class TripUpdate {
 
 		// Adapted from http://hortonworks.com/hadoop-tutorial/simulating-transporting-realtime-events-stream-apache-kafka/
 		Properties props = new Properties();
-		private static int LIMIT = 10;
+		private static int LIMIT = 10000;
 		private static int OFFSET = 20000000;
 		private static String TOPIC = "jycchien_hvfhv";
 		KafkaProducer<String, String> producer;
@@ -99,7 +99,7 @@ public class TripUpdate {
 		if(args.length > 0)  // This lets us run on the cluster with a different kafka
 			bootstrapServers = args[0];
 		Timer timer = new Timer();
-		timer.scheduleAtFixedRate(new Task(), 0, 60*1000);
+		timer.scheduleAtFixedRate(new Task(), 0, 10*1000);
 	}
 }
 

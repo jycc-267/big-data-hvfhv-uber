@@ -72,7 +72,7 @@ val hvfhs_trip = fhv_tripdata_with_zone.withColumn("hour_in_day", hour(col("pick
                                                               col("sales_tax") + col("congestion_surcharge") + 
                                                               col("airport_fee") + col("tips")).
                                         withColumn("wait_time", 
-                                                   unix_timestamp(col("on_scene_datetime")) - unix_timestamp(col("request_datetime")))
+                                                   unix_timestamp(col("pickup_datetime")) - unix_timestamp(col("request_datetime")))
 
 hvfhs_trip.createOrReplaceTempView("hvfhs_trip")
 hvfhs_trip.write.
@@ -82,45 +82,62 @@ hvfhs_trip.write.
     saveAsTable("jycchien_hvfhs_trip")
 
 
-val hvfhs_route_hourly = hvfhs_trip.groupBy(
-  col("hvfhs_license_num"),
-  col("pickup_zone"),
-  col("dropoff_zone"),
-  col("hour_in_day")
-).agg(
-  sum(when(col("congestion_surcharge").isNotNull, 1).otherwise(0)).as("congestion_surcharge_count"),
-  sum(col("congestion_surcharge")).as("total_congestion_surcharge"),
-  sum(when(col("tolls").isNotNull, 1).otherwise(0)).as("tolls_count"),
-  sum(col("tolls")).as("total_tolls"),
-  sum(when(col("revenue").isNotNull, 1).otherwise(0)).as("revenue_count"),
-  sum(col("revenue")).as("total_revenue"),
-  sum(when(col("trip_time").isNotNull, 1).otherwise(0)).as("trip_time_count"),
-  sum(col("trip_time")).as("total_trip_time"),
-  sum(when(col("wait_time").isNotNull, 1).otherwise(0)).as("wait_time_count"),
-  sum(col("wait_time")).as("total_wait_time")
-)
+
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
+import org.apache.hadoop.hbase.util.Bytes
+
+// Set up the HBase configuration, specifying the ZooKeeper client port and quorum
+val hbaseConf = HBaseConfiguration.create()
+
+  // Establish connections to HBase tables
+val hbaseConnection = ConnectionFactory.createConnection(hbaseConf)
+val zone_map = hbaseConnection.getTable(TableName.valueOf("jycchien_zone_map"))
+val zone = hbaseConnection.getTable(TableName.valueOf("jycchien_zone"))
+val hours = hbaseConnection.getTable(TableName.valueOf("jycchien_hours"))
 
 
-// val hvfhs_route_hourly_summary = hvfhs_route_hourly.select(
-//   col("hvfhs_license_num"),
-//   col("pickup_zone"),
-//   col("dropoff_zone"),
-//   col("hour_in_day"),
-//   when(col("congestion_surcharge_count") === 0, null)
-//     .otherwise(col("total_congestion_surcharge") / col("congestion_surcharge_count")).as("avg_congestion_surcharge"),
-//   when(col("tolls_count") === 0, null)
-//     .otherwise(col("total_tolls") / col("tolls_count")).as("avg_tolls"),
-//   when(col("revenue_count") === 0, null)
-//     .otherwise(col("total_revenue") / col("revenue_count")).as("avg_revenue"),
-//   when(col("trip_time_count") === 0, null)
-//     .otherwise(col("total_trip_time") / col("trip_time_count")).as("avg_trip_time"),
-//   when(col("wait_time_count") === 0, null)
-//     .otherwise(col("total_wait_time") / col("wait_time_count")).as("avg_wait_time")
-// )
+// Fetch the required columns from the Hive table
+val mappings = taxi_zone_lookup.select("locationid", "zone").collect()
 
-hvfhs_route_hourly_summary.createOrReplaceTempView("hvfhs_route_hourly_summary")
-hvfhs_route_hourly_summary.write.
-    format("parquet").
-    mode("append").
-    option("path", "wasbs://hbase-mpcs5301-2024-10-20t23-28-51-804z@hbasempcs5301hdistorage.blob.core.windows.net/jycchien/hvfhs_route_hourly_summary").
-    saveAsTable("jycchien_hvfhs_route_hourly")
+// Write data to HBase
+mappings.foreach { row =>
+  val locationId = row.getString(0)
+  val zoneName = row.getString(1)
+  
+  val put = new Put(Bytes.toBytes(locationId))
+  put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("zone"), Bytes.toBytes(zoneName))
+  
+  zone_map.put(put)
+}
+
+val zone_list = taxi_zone_lookup.select("zone").collect()
+zone_list.foreach { row =>
+  val zoneName = row.getString(0)
+  
+  val put = new Put(Bytes.toBytes(zoneName))
+  put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("zone"), Bytes.toBytes(zoneName))
+  
+  zone.put(put)
+}
+
+val hour_list = (0 to 23).toList
+hour_list.foreach { hour =>
+  val rowKey = Bytes.toBytes(hour.toString)
+  val put = new Put(rowKey)
+  put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("hour"), Bytes.toBytes(hour.toString))
+  
+  hours.put(put)
+}
+
+// Close the HBase connection
+hbaseConnection.close()
+
+
+
+
+
+
+
+
+

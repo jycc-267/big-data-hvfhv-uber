@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html>
+  <head>
+    <title>NYC HVFHV Trip Report</title>
+    <link type="text/css" rel="stylesheet" href="elegant-aero.css" />
+      <style>
+          input::-webkit-calendar-picker-indicator {
+              display: none;/* remove default arrow */
+          }
+          .myarrow:after {
+              content: url(https://i.stack.imgur.com/i9WFO.png);
+              margin-left: -20px;
+              padding: .1em;
+              pointer-events:none;
+          }
+      </style>
+      <script>
+          function resizeIframe(obj) {
+              obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
+          }
+      </script>
+  </head>
+  <body style='background-image:url("background.jpg");background-position:center bottom;background-size: 100%;'>
+  <p>
+  <form action="/trip-results.html" style="width:500px;height:250px;margin:0 auto;padding:30px;background:#FFFFFF;border-radius:5px;box-shadow:0 0 10px rgba(0,0,0,0.1)" method="get" target="results_iframe" class="elegant-aero">
+  <div style="white-space: nowrap;margin-bottom:15px">
+          <label style="display:block">
+            <span class="myarrow" style="display:block;margin-bottom:5px">
+                <span>Carrier:</span>
+                <input list="carriers" name="carrier" style="width:100%;padding:8px;box-sizing:border-box"/>
+                <datalist id="carriers">
+                    {{#carriers}}
+                    <option value="{{key}}">
+                    {{/carriers}}
+                </datalist>
+            </span>
+          </label>
+      </div>
+      <div style="white-space: nowrap;margin-bottom:15px">
+          <label style="display:block">
+            <span class="myarrow" style="display:block;margin-bottom:20px">
+                <span>Pickup Location:</span>
+                <input list="pickup_locations" name="pickup_location" style="width:100%;padding:8px;box-sizing:border-box"/>
+                <datalist id="pickup_locations">
+                    {{#zones}}
+                    <option value="{{key}}">
+                    {{/zones}}
+                </datalist>
+            </span>
+          </label>
+      </div>
+      <div style="white-space: nowrap;margin-bottom:15px">
+          <label style="display:block">
+            <span class="myarrow" style="display:block;margin-bottom:5px">
+                <span>Dropoff Location:</span>
+                <input list="dropoff_locations" name="dropoff_location" style="width:100%;padding:8px;box-sizing:border-box"/>
+                <datalist id="dropoff_locations">
+                    {{#zones}}
+                    <option value="{{key}}">
+                    {{/zones}}
+                </datalist>
+            </span>
+          </label>
+      </div>
+      <div style="white-space: nowrap;margin-bottom:15px">
+          <label style="display:block">
+            <span class="myarrow" style="display:block;margin-bottom:5px">
+                <span>Hour of Day:</span>
+                <input list="hours" name="hour" style="width:100%;padding:8px;box-sizing:border-box"/>
+                <datalist id="hours">
+                    {{#hours}}
+                    <option value="{{key}}">
+                    {{/hours}}
+                </datalist>
+            </span>
+          </label>
+      </div>
+      <div style="white-space: nowrap;text-align:center;margin-top:230px;margin-left:10px">
+          <input style="padding:10px 20px;cursor:pointer;background:#2196F3;color:white;border:none;border-radius:4px" type="submit" value="Submit">
+      </div>
+  </form>
+
+  <p/>
+
+    <iframe frameBorder="0" onload="resizeIframe(this)" name="results_iframe" style="display:block;width:100%;margin-left:auto;margin-right:auto"/>
+  </body>
+</html>
