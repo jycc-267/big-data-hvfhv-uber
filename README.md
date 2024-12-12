@@ -43,7 +43,7 @@ In addition to these three layers, the project utilizes a front-end web applicat
 Data Management:
 - The master datasets in the batch layer were exported in CSV format and bulk downloaded.
 - The real-time incoming dataset retrieves current data through the Socrata Open Data API, specifically targeting the 2022 High Volume FHV Trip Records.
-- This real-time data is fetched at 10-second intervals, ensuring that the system has access to up-to-date information.
+- This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
 
 
 ![Lambda Architecture](.images/lambda.jpg)
@@ -51,7 +51,7 @@ Data Management:
 #### Batch Layer
 
 The batch layer stores the master datasets `jycchien_fhv_tripdata` and `jycchien_zone_lookup` in HDFS hosted in Azure HDInsight Clusters. 
-It ingests the raw historical data through bash scripts and creates Hive tables containg the raw csv data. These are then copied and stored in ORC file format.
+It ingests the raw historical data through [ingest_fhv_data.sh](batch_layer/ingest_fhv_data.sh) and [get_zone_lookup.sh](batch_layer/get_zone_lookup.sh). Then, [the layer](batch_layer) creates Hive tables containg the raw csv data. These are then copied and stored in ORC file format.
 
 #### Serving Layer
 
@@ -60,20 +60,37 @@ On the other hand, the serving layer also create tables in HBase to handle Ad-Ho
 
 #### Speed Layer
 
-The speed layer consists of two steps: writing reports into Kafka, and reading from the Kafka report to update the batch view.
+The speed layer consists of two steps: writing incoming json data into Kafka, and reading from the Kafka message to update the batch view.
 
-1. `trafficKafka` implements a Kafka streaming buffer by getting real-time traffic data from the API into Kafka.
-It sends the current traffic report via a Java object to Kafka topic called `yson_traffic_2`, where the street name, segment, and traffic are stored.
-
-2. `trafficSpeedLayer` takes the real-time traffic report from Kafka, queries the historical traffic table `yson_street_by_seg` in HBase, 
-then combines the two in a Scala object. The HBase table is updated (not incremented) with a new view every timee new data comes in.
+ - [`kafka-trip`](speed_layer/kafka-trip/src/main/java/org/example) implements a Kafka streaming buffer by getting real-time traffic data through the Socrata Open Data API. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
+ - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka, extract the attributes needed, transform the attributes into row key, and increment the item records in the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`. 
 
 
-#### Web App
+#### Run the Web App
 
-The Node.js web application allows users to select a street from a drop-down list. It shows the current traffic
- for each segment of the street and the historical trends for that month and week of the year, day of week, and hour of day.
-It also shows the number of red light and speed camera violations in the past year and three months, and traffic crashes that occured in the street in the past month. 
+```bash
+# Run Kafka Trip Update
+sshuser@hn0-hbase:~/jycchien/kafka-trip/target$ java -cp uber-kafka-trip-1.0-SNAPSHOT.jar org.example.TripUpdate $KAFKABROKERS
+
+# Run Spark Streaming Job
+sshuser@hn0-hbase:~/jycchien/tripSpeedLayer/target$ spark-submit --master local[2] --driver-java-options "-Dlog4j.configuration=file:///home/hadoop/ss.log4j.properties" --class StreamTrips uber-tripSpeedLayer-1.0-SNAPSHOT.jar $KAFKABROKERS
+
+# SSH Tunneling
+ssh -i <my public key> -C2qTnNf -D 9876 sshuser@hbase-mpcs53014-2024-ssh.azurehdinsight.net
+
+# SSH Connection
+ssh -i <my public key> sshuser@hbase-mpcs53014-2024-ssh.azurehdinsight.net
+
+# Install Node.js dependencies
+sshuser@hn0-hbase:~/jycchien/fhv_webapp$ npm install
+
+# Run Node.js application
+sshuser@hn0-hbase:~/jycchien/fhv_webapp$ node app.js 3012 http://10.0.0.26:8090 $KAFKABROKERS
+```
+The [Node.js web application](webapp) allows users to select riding service provider, pickup location, dropoff location, and hour in day from 4 drop-down lists. It shows the current average trip metrics for each hourly route specified.
+
+
+#### Demo
 
 Before submitting:
 
