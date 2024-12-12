@@ -100,6 +100,7 @@ After submitting:
 
 ![After submit](.images/after-submit.jpg)
 
-Demo: 
+Demo Video: 
 
-![Gif](.images/interface.gif)
+https://youtu.be/pzD_eoVlbF0
+
