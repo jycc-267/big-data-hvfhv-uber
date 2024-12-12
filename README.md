@@ -87,7 +87,7 @@ sshuser@hn0-hbase:~/jycchien/fhv_webapp$ node app.js 3012 http://10.0.0.26:8090 
 The [Node.js web application](webapp) allows users to select riding service provider, pickup location, dropoff location, and hour in day from 4 drop-down lists. It shows the current average trip metrics for each hourly route specified.
 
 
-#### Demo
+## Demo
 
 Before submitting:
 
