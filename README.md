@@ -14,7 +14,6 @@ This project was developed as the final assignment for MPCS53014 - Big Data Appl
 The dataset taken from the City of New York's open data portal:
 - [2022 High Volume FHV Trip Records](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data)
 - [NYC Taxi Zones Ppen Dataset](https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv)
-Here's the corrected version with improved grammar:
 
 These records are generated from trip record submissions made by High Volume For-Hire Vehicle (FHV) bases. These bases are TLC-licensed FHV businesses that currently dispatch, or plan to dispatch, more than 10,000 FHV trips per day in New York City under a single brand, trade, or operating name. These services are referred to as High-Volume For-Hire Services (HVFHS).
 
@@ -26,8 +25,6 @@ Each row in the High Volume FHV Trip Records represents a single trip in an FHV 
 4. The pickup location ID (corresponding to NYC Taxi Zones)
 5. The dropoff location ID (corresponding to NYC Taxi Zones)
 
-These location IDs correspond with the open dataset of NYC Taxi Zones, allowing for spatial analysis of trip patterns.
-
 
 ## Structure
 
@@ -35,11 +32,11 @@ Here's the corrected version with improved grammar and coherence:
 
 The project implements the three layers of the Lambda Architecture:
 
-1. Batch Layer: This layer manages the master dataset, which serves as the source of truth. It consists of an immutable, append-only set of raw data. The batch layer pre-computes views from this master dataset.
+1. `Batch Layer`: This layer manages the master dataset, which serves as the source of truth. It consists of an immutable, append-only set of raw data. The batch layer pre-computes views from this master dataset.
 
-2. Serving Layer: This layer responds to ad-hoc queries by returning pre-computed views from the batch layer or building views from the processed data. It combines batch views and incremental views, which are pre-computed and accessed through ad-hoc queries requested from the web application.
+2. `Serving Layer`: This layer responds to ad-hoc queries by returning pre-computed views from the batch layer or building views from the processed data. It combines batch views and incremental views, which are ad-hoc queries requested from the web application.
 
-3. Speed Layer: This layer deals exclusively with up-to-date data to compensate for the latency inherent in the batch layer. It ensures that recent data is quickly incorporated into the system's outputs.
+3. `Speed Layer`: This layer deals exclusively with up-to-date data to compensate for the latency inherent in the batch layer. It ensures that recent data is quickly incorporated into the system's outputs.
 
 In addition to these three layers, the project utilizes a front-end web application to convert the output into a graphical interface, making the data more accessible and user-friendly.
 
@@ -58,7 +55,7 @@ It ingests the raw historical data through bash scripts and creates Hive tables 
 
 #### Serving Layer
 
-The serving layer takes the ORC tables in Hive and populates derived tables into HBase by utilizing spark to perform data wranggling against the master datasets. `jycchien_hvfhs_trip` serve as a staging table to generate the batch view `jycchien_hvfhs_route_hourly`, which is then stored in HBase as `jycchien_hvfhs_route_hourly_summary`.
+The serving layer takes the ORC tables in Hive and populates derived tables into HBase by utilizing a ![spark script](serving_layer/hvfhs_route_hourly.scala) to perform data wranggling against the master datasets. `jycchien_hvfhs_trip` serve as a staging table to generate the batch view `jycchien_hvfhs_route_hourly`, which is then stored in HBase as `jycchien_hvfhs_route_hourly_summary`.
 On the other hand, the serving layer also create tables in HBase to handle Ad-Hoc querying. The spark script create 3 Hbase tables: `jycchien_carrier, jycchien_zone, jycchien_hours` for the front-end app to scan these tables and build a searchable drop-down list for users to submit their ad-hoc queries. 
 
 #### Speed Layer
