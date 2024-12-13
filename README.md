@@ -1,4 +1,4 @@
-## New York City High Volumn For-Hire Vehicle (hvfhv) Reporting
+## End-to-End Lambda Architecture for Ad Hoc Reporting on Large-Scale Uber Trip Data
 
 
 This project implements the Lambda Architecture to analyze high-volume for-hire vehicle (HVFHV) trips in New York City. It provides insights into key metrics such as average price, waiting time, trip duration, and the costs associated with tolls and congestion surcharges. These metrics are broken down by carrier, pickup location, dropoff location, and hour of the day.
@@ -6,23 +6,6 @@ This project implements the Lambda Architecture to analyze high-volume for-hire 
 The primary purpose of this project is to establish an ad hoc reporting system that enables the analysis of trip efficiency and pricing dynamics for major ride-sharing services in the United States. By leveraging the Lambda Architecture, the system can process both batch and real-time data, offering a comprehensive view of the ride-sharing landscape in New York City.
 
 This project was developed as the final assignment for MPCS53014 - Big Data Application Architecture at the University of Chicago. 
-
-
-## Data
-
-The dataset taken from the City of New York's open data portal:
-- [2022 High Volume FHV Trip Records](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data)
-- [NYC Taxi Zones Open Dataset](https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv)
-
-These records are generated from trip record submissions made by High Volume For-Hire Vehicle (FHV) bases. These bases are TLC-licensed FHV businesses that currently dispatch, or plan to dispatch, more than 10,000 FHV trips per day in New York City under a single brand, trade, or operating name. These services are referred to as High-Volume For-Hire Services (HVFHS).
-
-Each row in the High Volume FHV Trip Records represents a single trip in an FHV dispatched by a high-volume base. The trip records include fields that capture:
-
-1. The high-volume license number
-2. The pickup date and time
-3. The dropoff date and time
-4. The pickup location ID (corresponding to NYC Taxi Zones)
-5. The dropoff location ID (corresponding to NYC Taxi Zones)
 
 
 ## Structure
@@ -63,8 +46,24 @@ The speed layer consists of two steps: writing incoming json data into Kafka, an
  - [`kafka-trip`](speed_layer/kafka-trip/src/main/java/org/example) implements a Kafka streaming buffer by getting real-time traffic data through the Socrata Open Data API. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
  - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka, extracts the attributes needed, transforms the attributes into row key, and increment the item records in the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`. By doing so, I can avoid using `scan` against large dataset.
 
+## Data
 
-#### Run the Web App
+The dataset taken from the City of New York's open data portal:
+- [2022 High Volume FHV Trip Records](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data)
+- [NYC Taxi Zones Open Dataset](https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv)
+
+These records are generated from trip record submissions made by High Volume For-Hire Vehicle (FHV) bases. These bases are TLC-licensed FHV businesses that currently dispatch, or plan to dispatch, more than 10,000 FHV trips per day in New York City under a single brand, trade, or operating name. These services are referred to as High-Volume For-Hire Services (HVFHS).
+
+Each row in the High Volume FHV Trip Records represents a single trip in an FHV dispatched by a high-volume base. The trip records include fields that capture:
+
+1. The high-volume license number
+2. The pickup date and time
+3. The dropoff date and time
+4. The pickup location ID (corresponding to NYC Taxi Zones)
+5. The dropoff location ID (corresponding to NYC Taxi Zones)
+
+
+## Run the Web App
 
 ```bash
 # Run Kafka Trip Update
