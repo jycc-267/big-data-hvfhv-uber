@@ -17,11 +17,6 @@ The primary purpose of this project is to establish an ad hoc reporting system t
 
 In addition to these three layers, the project utilizes a front-end web application to convert the output into a graphical interface, making the data more accessible and user-friendly.
 
-Data Management:
-- The master datasets in the batch layer were exported in CSV format and bulk downloaded.
-- The real-time incoming dataset retrieves current data through the Socrata Open Data API, specifically targeting the 2022 High Volume FHV Trip Records.
-- This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
-
 
 #### Batch Layer
 
@@ -37,8 +32,10 @@ On the other hand, the serving layer also create tables in HBase to handle Ad-Ho
 
 The speed layer consists of two steps: writing incoming json data into Kafka, and reading from the Kafka message to update the batch view.
 
- - [`kafka-trip`](speed_layer/kafka-trip/src/main/java/org/example) implements a Kafka streaming buffer by getting real-time traffic data through the Socrata Open Data API. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
- - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka, extracts the attributes needed, transforms the attributes into row key, and increment the item records in the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`. By doing so, I can avoid using `scan` against large dataset.
+ - [`kafka-trip`](speed_layer/kafka-trip/src/main/java/org/example) implements a Kafka streaming buffer by getting real-time trip data through the Socrata Open Data API. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
+ - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka and extracts the attributes required, and increments the processed data for the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`.
+ - In order to get the row key of `jycchien_hvfhs_route_hourly_summary_speed`, `tripSpeedLayer` has to concat attributes retrieved from POJO: (`$carrierValue|$pickupZoneName|$dropoffZoneName|$hourInDay`). Since these four attributes are also user inputs, the front-end endpoints can avoid `scanning` against large batch and speed views by easily concatenating user inouts to get the row key.
+ - By doing so, the system saves compute power and reduce database I/Os.
 
 ## Data
 
@@ -56,6 +53,10 @@ Each row in the High Volume FHV Trip Records represents a single trip in an FHV 
 4. The pickup location ID (corresponding to NYC Taxi Zones)
 5. The dropoff location ID (corresponding to NYC Taxi Zones)
 
+#### Data Management:
+- The master datasets in the batch layer were exported in CSV format and bulk downloaded.
+- The real-time incoming dataset retrieves current data through the Socrata Open Data API, specifically targeting the 2022 High Volume FHV Trip Records.
+- This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
 
 ## Run the Web App
 
