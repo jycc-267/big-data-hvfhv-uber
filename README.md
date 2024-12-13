@@ -3,9 +3,7 @@
 
 This project implements the Lambda Architecture to analyze high-volume for-hire vehicle (HVFHV) trips in New York City. It provides insights into key metrics such as average price, waiting time, trip duration, and the costs associated with tolls and congestion surcharges. These metrics are broken down by carrier, pickup location, dropoff location, and hour of the day.
 
-The primary purpose of this project is to establish an ad hoc reporting system that enables the analysis of trip efficiency and pricing dynamics for major ride-sharing services in the United States. By leveraging the Lambda Architecture, the system can process both batch and real-time data, offering a comprehensive view of the ride-sharing landscape in New York City.
-
-This project was developed as the final assignment for MPCS53014 - Big Data Application Architecture at the University of Chicago. 
+The primary purpose of this project is to establish an ad hoc reporting system that enables the analysis of trip efficiency and pricing dynamics for major ride-sharing services in the United States. This project was developed as the final assignment for MPCS53014 - Big Data Application Architecture at the University of Chicago. 
 
 
 ## Structure
@@ -23,7 +21,6 @@ Data Management:
 - The master datasets in the batch layer were exported in CSV format and bulk downloaded.
 - The real-time incoming dataset retrieves current data through the Socrata Open Data API, specifically targeting the 2022 High Volume FHV Trip Records.
 - This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
-
 
 
 #### Batch Layer
