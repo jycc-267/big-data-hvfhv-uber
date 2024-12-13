@@ -97,6 +97,8 @@ After submitting:
 
 ![After submit](.images/after-submit.jpg)
 
+![GIF](.images/demo.gif)
+
 Demo Video: 
 
 https://youtu.be/pzD_eoVlbF0
