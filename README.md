@@ -11,8 +11,6 @@ This project was developed as the final assignment for MPCS53014 - Big Data Appl
 ## Structure
 ![Architecture](.images/architecture.jpg)
 
-The project implements the three layers of the Lambda Architecture:
-
 1. `Batch Layer`: This layer manages the master dataset, which serves as the source of truth. It consists of an immutable, append-only set of raw data. The batch layer pre-computes views from this master dataset.
 
 2. `Serving Layer`: This layer responds to ad-hoc queries by returning pre-computed views from the batch layer or building views from the processed data. It combines batch views and incremental views, which are ad-hoc queries requested from the web application.
