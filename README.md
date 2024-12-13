@@ -9,8 +9,7 @@ This project was developed as the final assignment for MPCS53014 - Big Data Appl
 
 
 ## Structure
-
-Here's the corrected version with improved grammar and coherence:
+![Architecture](.images/architecture.jpg)
 
 The project implements the three layers of the Lambda Architecture:
 
@@ -27,7 +26,7 @@ Data Management:
 - The real-time incoming dataset retrieves current data through the Socrata Open Data API, specifically targeting the 2022 High Volume FHV Trip Records.
 - This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
 
-![Architecture](.images/architecture.jpg)
+
 
 #### Batch Layer
 
