@@ -12,7 +12,7 @@ This project was developed as the final assignment for MPCS53014 - Big Data Appl
 
 The dataset taken from the City of New York's open data portal:
 - [2022 High Volume FHV Trip Records](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data)
-- [NYC Taxi Zones Ppen Dataset](https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv)
+- [NYC Taxi Zones Open Dataset](https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv)
 
 These records are generated from trip record submissions made by High Volume For-Hire Vehicle (FHV) bases. These bases are TLC-licensed FHV businesses that currently dispatch, or plan to dispatch, more than 10,000 FHV trips per day in New York City under a single brand, trade, or operating name. These services are referred to as High-Volume For-Hire Services (HVFHS).
 
@@ -44,6 +44,7 @@ Data Management:
 - The real-time incoming dataset retrieves current data through the Socrata Open Data API, specifically targeting the 2022 High Volume FHV Trip Records.
 - This real-time data (10,000 records per batch) is fetched at 10-second intervals and processed at 5-second intervals, ensuring that the system has access to up-to-date information.
 
+[Architecture](.images/architecture.jpg)
 
 #### Batch Layer
 
@@ -89,6 +90,10 @@ The [Node.js web application](webapp) allows users to select riding service prov
 
 ## Demo
 
+Demo Video: 
+
+https://youtu.be/pzD_eoVlbF0
+
 Before submitting:
 
 ![Before submit](.images/before-submit.jpg)
@@ -99,7 +104,5 @@ After submitting:
 
 ![GIF](.images/demo.gif)
 
-Demo Video: 
 
-https://youtu.be/pzD_eoVlbF0
 
