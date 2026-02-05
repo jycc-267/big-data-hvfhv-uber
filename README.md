@@ -17,26 +17,19 @@ The system extracts, processes, and serves derived metrics (for example: `revenu
   - `get_zone_lookup.sh` — fetch `taxi_zone_lookup.csv` into HDFS
   - `fhv_trip.hql` — Hive DDL to create external/managed tables and convert CSV → `ORC`
   - `taxi_zone_lookup.hql` — Hive DDL to create/convert zone lookup → `ORC`
+
 - `serving_layer/`: The serving layer takes the ORC tables in Hive and populates derived tables into HBase by utilizing a [spark script](serving_layer/hvfhs_route_hourly.scala) to perform data wranggling against the master datasets. `jycchien_hvfhs_trip` serve as a staging table to generate the batch view `jycchien_hvfhs_route_hourly`, which is then stored in HBase as `jycchien_hvfhs_route_hourly_summary`. On the other hand, the serving layer also create tables in HBase to handle Ad-Hoc querying. The spark script create 3 Hbase tables: `jycchien_carrier, jycchien_zone, jycchien_hours` for the front-end app to scan these tables and build a searchable drop-down list for users to submit their ad-hoc queries.
   - `hvfhs_trip.hql` — create external & managed tables (Parquet/ORC) for joined/derived trip data
   - `hvfhs_route_hourly.scala` — Spark script that joins trip and zone lookup data and computes derived columns
   - `hvfhs_route_hourly_toHBase.hql` — Hive DDL to aggregate route-hour metrics and map to `HBase`
   - `hbase_query_table.hql` — HBase table creation examples for carrier/license/zone/hour lookups
-- `speed_layer/`: The speed layer consists of two steps: writing incoming json data into Kafka, and reading from the Kafka message to update the batch view.
 
- - [`kafka-trip`](speed_layer/kafka-trip/src/main/java/org/example) implements a Kafka streaming buffer by getting real-time trip data through the Socrata Open Data API. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
- - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) consumes the real-time trip messages from Kafka and extracts the attributes required, and increments the processed data for the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`.
- - In order to get the row key of `jycchien_hvfhs_route_hourly_summary_speed`, `tripSpeedLayer` has to concat attributes retrieved from POJO: (`$carrierValue|$pickupZoneName|$dropoffZoneName|$hourInDay`). Since these four attributes are also user inputs, the front-end endpoints can avoid `scanning` against large batch and speed views by easily concatenating user inouts to get the row key.
+- `speed_layer/`: The speed layer consists of two steps: writing incoming json data into Kafka, and reading from the Kafka message to update the batch view.
+  - [`kafka-trip/`](https://github.com/jycc-267/big-data-hvfhv-uber/blob/main/speed_layer/kafka-trip/src/main/java/org/example) — Java app that polls the Socrata Open Data API (simulate getting real-time trip data) and publishes JSON trip events to `a Kafka streaming buffer`. It utilizes Java POJO to hold the incoming trip json data and publish it to Kafka topic called `jycchien_hvhfv`.
+  - [`tripSpeedLayer`](https://github.com/jycc-267/big-data-hvfhv-uber/tree/main/speed_layer/tripSpeedLayer/src/main/scala) — Scala `Spark Streaming` consumer that reads the real-time trip messages from `Kafka`, extracts the attributes required, and increments the processed data for the Speed Layer HBase table `jycchien_hvfhs_route_hourly_summary_speed`.
+  - `web_app/` — front-end files that query
+  - In order to get the row key of `jycchien_hvfhs_route_hourly_summary_speed`, `tripSpeedLayer` has to concat attributes retrieved from POJO: (`$carrierValue|$pickupZoneName|$dropoffZoneName|$hourInDay`). Since these four attributes are also user inputs, the front-end endpoints can avoid `scanning` against large batch and speed views by easily concatenating user inouts to get the row key.
  - By doing so, the system saves compute power and reduce database I/Os.
-  - `kafka-trip/` — Java app that polls the Socrata Open Data API and publishes JSON trip events to `Kafka`
-    - `src/main/java/org/example/TripUpdate.java`
-    - `pom.xml`
-  - `tripSpeedLayer/` — Scala `Spark Streaming` consumer that reads `Kafka` and updates `HBase` summaries
-    - `src/main/scala/StreamTrips.scala`
-    - `src/main/scala/DataTypeConverters.scala`
-    - `src/main/scala/KafkaTripRecord.scala`
-    - `pom.xml`
-- `web_app/` (if present) — front-end files that query `HBase` (may include `HTML`/`CSS`/`JS`/`Mustache` templates)
 - `README.md`
 
 ## Important files and how they map to pipeline steps
