@@ -1,9 +1,7 @@
 ## End-to-End Lambda Architecture for Ad Hoc Reporting on Large-Scale Uber Trip Data
 
 
-This project implements a Lambda Architecture to enable ad-hoc reporting and analysis of high-volume for-hire vehicle (HVFHV) trip data (NYC dataset). It was developed as the final project for `MPCS53014 - Big Data Application Architecture` at the University of Chicago.
-
-The system extracts, processes, and serves derived metrics (for example: `revenue`, `trip_time`, `wait_time`, `tolls`, `congestion_surcharge`) broken down by `carrier`, `pickup_zone`, `dropoff_zone`, and `hour_in_day`. It uses `Hive`/`Spark` for batch processing, `HBase` for serving pre-computed summaries, and `Kafka` + `Spark Streaming` for the speed layer.
+This project implements a Lambda Architecture to enable ad-hoc reporting and analysis of high-volume for-hire vehicle (HVFHV) trip data (NYC dataset). The system extracts, processes, and serves derived metrics (for example: `revenue`, `trip_time`, `wait_time`, `tolls`, `congestion_surcharge`) broken down by `carrier`, `pickup_zone`, `dropoff_zone`, and `hour_in_day`. It uses `Hive`/`Spark` for batch processing, `HBase` for serving pre-computed summaries, and `Kafka` + `Spark Streaming` for the speed layer.
 
 ## Key goals
 - Build a repeatable pipeline for ingesting HVFHV trip data into `HDFS` / `Hive`
