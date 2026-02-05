@@ -13,6 +13,8 @@ The system extracts, processes, and serves derived metrics (for example: `revenu
 
 ## Repository layout
 - `batch_layer/`
+The batch layer stores the master datasets `jycchien_fhv_tripdata` and `jycchien_zone_lookup` in HDFS hosted in Azure HDInsight Clusters. 
+It ingests the raw historical data through [ingest_fhv_data.sh](batch_layer/ingest_fhv_data.sh) and [get_zone_lookup.sh](batch_layer/get_zone_lookup.sh). Then, [the layer](batch_layer) creates Hive tables containg the raw csv data. These are then copied and stored in ORC file format.
   - `ingest_fhv_data.sh` — script to download CSV chunks from [the New York Open Data Portal](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data) and put them into HDFS
   - `get_zone_lookup.sh` — fetch `taxi_zone_lookup.csv` into HDFS
   - `fhv_trip.hql` — Hive DDL to create external/managed tables and convert CSV → `ORC`
@@ -58,8 +60,7 @@ In addition to these three layers, the project utilizes a front-end web applicat
 
 #### Batch Layer
 
-The batch layer stores the master datasets `jycchien_fhv_tripdata` and `jycchien_zone_lookup` in HDFS hosted in Azure HDInsight Clusters. 
-It ingests the raw historical data through [ingest_fhv_data.sh](batch_layer/ingest_fhv_data.sh) and [get_zone_lookup.sh](batch_layer/get_zone_lookup.sh). Then, [the layer](batch_layer) creates Hive tables containg the raw csv data. These are then copied and stored in ORC file format.
+
 
 #### Serving Layer
 
