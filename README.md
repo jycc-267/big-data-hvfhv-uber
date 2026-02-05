@@ -1,16 +1,38 @@
 ## End-to-End Lambda Architecture for Ad Hoc Reporting on Large-Scale Uber Trip Data
 
 
-This project implements a Lambda Architecture to enable ad-hoc reporting and analysis of high-volume for-hire vehicle (HVFHV) trip data (NYC dataset). It was developed as the final assignment for MPCS53014 - Big Data Application Architecture at the University of Chicago.
+This project implements a Lambda Architecture to enable ad-hoc reporting and analysis of high-volume for-hire vehicle (HVFHV) trip data (NYC dataset). It was developed as the final project for `MPCS53014 - Big Data Application Architecture` at the University of Chicago.
 
-The system extracts, processes, and serves derived metrics (e.g., revenue, trip/wait time, tolls, congestion surcharge counts) broken down by carrier, pickup/dropoff zones, and hour of day. It uses Hive/Spark for batch processing, HBase for serving pre-computed summaries, and Kafka + Spark Streaming for the speed layer.
+The system extracts, processes, and serves derived metrics (for example: `revenue`, `trip_time`, `wait_time`, `tolls`, `congestion_surcharge`) broken down by `carrier`, `pickup_zone`, `dropoff_zone`, and `hour_in_day`. It uses `Hive`/`Spark` for batch processing, `HBase` for serving pre-computed summaries, and `Kafka` + `Spark Streaming` for the speed layer.
 
-Key goals
-- Build a repeatable pipeline for ingesting HVFHV trip data into HDFS/Hive
-- Pre-compute hourly route summaries (batch layer) and store them in HBase (serving layer)
+## Key goals
+- Build a repeatable pipeline for ingesting HVFHV trip data into `HDFS` / `Hive`
+- Pre-compute hourly route summaries (batch layer) and store them in `HBase` (serving layer)
 - Ingest realtime trip events and incrementally update summaries (speed layer)
-- Provide data structures for a simple front-end to query and visualize results
+- Provide data artifacts for a simple front-end to query and visualize results
 
+## Repository layout (high level)
+- `batch_layer/`
+  - `ingest_fhv_data.sh` — script to download CSV chunks from NYC Open Data and put them into HDFS
+  - `get_zone_lookup.sh` — fetch `taxi_zone_lookup.csv` into HDFS
+  - `fhv_trip.hql` — Hive DDL to create external/managed tables and convert CSV → `ORC`
+  - `taxi_zone_lookup.hql` — Hive DDL to create/convert zone lookup → `ORC`
+- `serving_layer/`
+  - `hvfhs_trip.hql` — create external & managed tables (Parquet/ORC) for joined/derived trip data
+  - `hvfhs_route_hourly.scala` — Spark script that joins trip and zone lookup data and computes derived columns
+  - `hvfhs_route_hourly_toHBase.hql` — Hive DDL to aggregate route-hour metrics and map to `HBase`
+  - `hbase_query_table.hql` — HBase table creation examples for carrier/license/zone/hour lookups
+- `speed_layer/`
+  - `kafka-trip/` — Java app that polls the Socrata Open Data API and publishes JSON trip events to `Kafka`
+    - `src/main/java/org/example/TripUpdate.java`
+    - `pom.xml`
+  - `tripSpeedLayer/` — Scala `Spark Streaming` consumer that reads `Kafka` and updates `HBase` summaries
+    - `src/main/scala/StreamTrips.scala`
+    - `src/main/scala/DataTypeConverters.scala`
+    - `src/main/scala/KafkaTripRecord.scala`
+    - `pom.xml`
+- `web_app/` (if present) — front-end files that query `HBase` (may include `HTML`/`CSS`/`JS`/`Mustache` templates)
+- `README.md` — (this file)
 
 ## Structure
 ![Architecture](.images/architecture.jpg)
