@@ -11,7 +11,7 @@ The system extracts, processes, and serves derived metrics (for example: `revenu
 - Ingest realtime trip events and incrementally update summaries (speed layer)
 - Provide data artifacts for a simple front-end to query and visualize results
 
-## Repository layout (high level)
+## Repository layout
 - `batch_layer/`
   - `ingest_fhv_data.sh` — script to download CSV chunks from [the New York Open Data Portal](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data) and put them into HDFS
   - `get_zone_lookup.sh` — fetch `taxi_zone_lookup.csv` into HDFS
@@ -33,6 +33,16 @@ The system extracts, processes, and serves derived metrics (for example: `revenu
     - `pom.xml`
 - `web_app/` (if present) — front-end files that query `HBase` (may include `HTML`/`CSS`/`JS`/`Mustache` templates)
 - `README.md`
+
+## Important files and how they map to pipeline steps
+- `batch_layer/ingest_fhv_data.sh` — chunked download from Socrata CSV endpoint → `HDFS`
+- `batch_layer/get_zone_lookup.sh` — `taxi_zone_lookup.csv` → `HDFS`
+- `batch_layer/fhv_trip.hql`, `batch_layer/taxi_zone_lookup.hql` — Hive DDLs to stage and convert raw CSV into `ORC` managed tables
+- `serving_layer/hvfhs_trip.hql` — reads external Parquet and creates `ORC` managed table used by aggregation
+- `serving_layer/hvfhs_route_hourly.scala` — Spark transformations to compute `revenue`, `hour_in_day`, `wait_time`, and join zones
+- `serving_layer/hvfhs_route_hourly_toHBase.hql` — aggregation (`GROUP BY carrier, pickup_zone, dropoff_zone, hour_in_day`) and mapping to `HBase`
+- `speed_layer/kafka-trip` — `TripUpdate.java` posts JSON events to `Kafka`
+- `speed_layer/tripSpeedLayer` — Spark Streaming process to consume `Kafka` and update `HBase` counters/aggregates
 
 ## Structure
 ![Architecture](.images/architecture.jpg)
