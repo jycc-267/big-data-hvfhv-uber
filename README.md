@@ -13,7 +13,7 @@ The system extracts, processes, and serves derived metrics (for example: `revenu
 
 ## Repository layout (high level)
 - `batch_layer/`
-  - `ingest_fhv_data.sh` — script to download CSV chunks from NYC Open Data and put them into HDFS
+  - `ingest_fhv_data.sh` — script to download CSV chunks from [the New York Open Data Portal](https://data.cityofnewyork.us/Transportation/2022-High-Volume-FHV-Trip-Records/g6pj-fsah/about_data) and put them into HDFS
   - `get_zone_lookup.sh` — fetch `taxi_zone_lookup.csv` into HDFS
   - `fhv_trip.hql` — Hive DDL to create external/managed tables and convert CSV → `ORC`
   - `taxi_zone_lookup.hql` — Hive DDL to create/convert zone lookup → `ORC`
@@ -32,7 +32,7 @@ The system extracts, processes, and serves derived metrics (for example: `revenu
     - `src/main/scala/KafkaTripRecord.scala`
     - `pom.xml`
 - `web_app/` (if present) — front-end files that query `HBase` (may include `HTML`/`CSS`/`JS`/`Mustache` templates)
-- `README.md` — (this file)
+- `README.md`
 
 ## Structure
 ![Architecture](.images/architecture.jpg)
