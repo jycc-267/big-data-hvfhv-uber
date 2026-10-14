@@ -1,20 +1,21 @@
 {
-  "name": "test",
+  "name": "hvfhv-webapp",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "description": "Ad hoc route reports over the HVFHV Lambda serving layer (Cassandra batch + speed views)",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "test": "node --test"
   },
-  "author": "",
+  "engines": {
+    "node": ">=18"
+  },
   "license": "ISC",
   "dependencies": {
+    "cassandra-driver": "^4.10.0",
     "dotenv": "^16.4.5",
     "express": "^4.17.1",
-    "hbase": "^0.6.1",
-    "hbase-rpc-client": "^0.1.15",
-    "kafka-node": "^5.0.0",
-    "mustache": "^4.0.1",
-    "node-zookeeper-client": "^1.1.0"
+    "mustache": "^4.0.1"
   }
 }

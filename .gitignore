@@ -1,0 +1,30 @@
+# Build output
+target/
+dependency-reduced-pom.xml
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.bsp/
+.metals/
+
+# OS
+.DS_Store
+
+# Node
+node_modules/
+
+# Local secrets
+.env
+
+# Local pipeline data, Spark checkpoints and warehouse
+data/
+spark-warehouse/
+metastore_db/
+derby.log

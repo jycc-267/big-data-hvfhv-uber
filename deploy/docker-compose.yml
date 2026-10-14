@@ -1,0 +1,226 @@
+# Local Lambda stack. Jobs run the jars built by `./mvnw package`.
+#
+# All pipeline state lives in named volumes; only the downloaded inputs come from ../data/raw.
+#   down     keeps everything: Kafka, checkpoints, producer offset, Hive and Cassandra resume together
+#   down -v  wipes all pipeline state (the downloads in ../data/raw are kept)
+#
+#   docker compose -f deploy/docker-compose.yml up -d --wait kafka cassandra hive-metastore hiveserver2 webapp
+#   scripts/hive-init.sh
+#   scripts/spark-job.sh hvfhv.batch.IngestMasterDataset
+#   docker compose -f deploy/docker-compose.yml --profile stream up -d speed producer
+#
+# scripts/e2e.sh runs the whole pipeline end to end. Give Docker Desktop ~12 GB of memory.
+name: hvfhv
+
+x-pipeline-env: &pipeline-env
+  DATA_DIR: /data
+  KAFKA_BROKERS: kafka:9092
+  KAFKA_TOPIC: hvfhv-trips
+  CASSANDRA_HOST: cassandra
+  HIVE_METASTORE_URI: thrift://hive-metastore:9083
+
+# Hive records absolute file:///data/... locations, so every container that reads or
+# writes table data must mount the pipeline-data volume at exactly /data.
+x-data-volume: &data-volume pipeline-data:/data
+x-raw-volume: &raw-volume ../data/raw:/data/raw:ro
+
+x-spark: &spark
+  image: apache/spark:3.5.1-scala2.12-java17-ubuntu
+  user: "0" # the pipeline-data volume is owned by root
+  environment:
+    <<: *pipeline-env
+    SPARK_LOCAL_IP: 127.0.0.1
+  volumes:
+    - *data-volume
+    - *raw-volume
+    - ../batch/target/hvfhv-batch.jar:/jobs/hvfhv-batch.jar:ro
+    - ../speed/target/hvfhv-speed.jar:/jobs/hvfhv-speed.jar:ro
+    # Caches the Hive 3.1.3 metastore client Spark downloads on first use (see SparkSessions).
+    - spark-ivy:/root/.ivy2
+  depends_on:
+    cassandra:
+      condition: service_healthy
+    hive-metastore:
+      condition: service_healthy
+    kafka:
+      condition: service_healthy
+
+x-hive: &hive
+  build: ./hive
+  image: hvfhv-hive:4.0.1
+  user: "0" # creates table directories in the root-owned pipeline-data volume
+  volumes:
+    - *data-volume
+
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    hostname: kafka
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # One partition keeps trips in request order, which the batch watermark relies on.
+      KAFKA_NUM_PARTITIONS: 1
+      # On a volume, so the topic survives `down` together with the consumers' checkpoints.
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  # --- Batch layer storage: Hive (ground truth) ---------------------------------------
+
+  postgres: # the Hive Metastore's own database (table definitions, partitions)
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    volumes:
+      - metastore-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  hive-metastore:
+    <<: *hive
+    hostname: hive-metastore
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres # creates or upgrades the metastore schema on start
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9083'"]
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 40
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  hiveserver2: # HiveQL endpoint: beeline -u jdbc:hive2://localhost:10000/
+    <<: *hive
+    hostname: hiveserver2
+    ports:
+      - "10000:10000" # JDBC
+      - "10002:10002" # web UI
+    environment:
+      SERVICE_NAME: hiveserver2
+      IS_RESUME: "true" # the metastore container owns schema initialisation
+    volumes:
+      - *data-volume
+      - ./hive:/opt/ddl:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/10000'"]
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
+      retries: 60
+    depends_on:
+      hive-metastore:
+        condition: service_healthy
+
+  # --- Serving layer: Cassandra ---------------------------------------------------------
+
+  cassandra:
+    image: cassandra:4.1
+    hostname: cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    # Dev only: don't keep a snapshot of every retired batch-view table.
+    entrypoint: ["bash", "-c", "sed -i 's/^auto_snapshot: true/auto_snapshot: false/' /etc/cassandra/cassandra.yaml && exec docker-entrypoint.sh cassandra -f"]
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      start_period: 60s
+      retries: 30
+
+  webapp:
+    build: ../webapp
+    image: hvfhv-webapp
+    ports:
+      - "3012:3012"
+    environment:
+      CASSANDRA_CONTACT_POINTS: cassandra
+      CASSANDRA_KEYSPACE: hvfhv
+    depends_on:
+      cassandra:
+        condition: service_healthy
+
+  # --- Compute --------------------------------------------------------------------------
+
+  # One-off batch jobs: scripts/spark-job.sh <main class> [args]
+  spark:
+    <<: *spark
+    profiles: ["jobs"]
+
+  speed:
+    <<: *spark
+    profiles: ["stream"]
+    stop_grace_period: 60s # let the in-flight micro-batch finish
+    command:
+      - /opt/spark/bin/spark-submit
+      - --master
+      - local[4]
+      - --driver-memory
+      - 2g
+      - --conf
+      - spark.sql.shuffle.partitions=4
+      - --class
+      - hvfhv.speed.StreamTrips
+      - /jobs/hvfhv-speed.jar
+
+  producer:
+    image: eclipse-temurin:17-jre-jammy
+    profiles: ["stream"]
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: hvfhv-trips
+      SPLIT_DATETIME: ${SPLIT_DATETIME:-2022-01-02T00:00:00}
+      STREAM_UNTIL: ${STREAM_UNTIL:-}
+      PAGE_SIZE: ${PAGE_SIZE:-10000}
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-10}
+      OFFSET_FILE: /data/producer/offset
+      SOCRATA_APP_TOKEN: ${SOCRATA_APP_TOKEN:-}
+    volumes:
+      - *data-volume
+      - ../producer/target/hvfhv-producer.jar:/jobs/hvfhv-producer.jar:ro
+    command: ["java", "-jar", "/jobs/hvfhv-producer.jar"]
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+volumes:
+  pipeline-data: # Hive warehouse, landing zone, staging, streaming checkpoints, producer offset
+  kafka-data:
+  spark-ivy:
+  metastore-db:
+  cassandra-data:
+
+networks:
+  default:
+    # No underscore: the Hive 3 metastore client reverse-resolves the metastore host and
+    # rejects names like hvfhv-hive-metastore-1.hvfhv_default as invalid URIs.
+    name: hvfhv-net

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Trip Results</title>
+    <link type="text/css" rel="stylesheet" href="table.css" />
+</head>
+<body>
+<div style="text-align:center;font-size:24px;margin:20px 0;font-weight:bold">High Volume For-Hire Vehicle Trip Statistics in New York City</div>
+{{#errors.length}}
+<ul style="width:70%;margin:auto;color:#b00020">
+    {{#errors}}<li>{{.}}</li>{{/errors}}
+</ul>
+{{/errors.length}}
+{{#route}}
+<p style="text-align:center">
+    {{carrier}}: {{pickup}} &rarr; {{dropoff}}, hour {{hour}}
+</p>
+{{#found}}
+<table class="CSS_Table_Example" style="width:70%;margin:auto;">
+    <tr>
+        <td>Metric</td>
+        <td>Average per trip</td>
+    </tr>
+    {{#metrics}}
+    <tr>
+        <td><b>{{label}}</b></td>
+        <td>{{display}}</td>
+    </tr>
+    {{/metrics}}
+</table>
+<p style="text-align:center;color:#555">
+    {{trips.total}} trips: {{trips.batch}} from the batch view (requests before {{watermark}})
+    + {{trips.speed}} from the speed layer.
+</p>
+{{/found}}
+{{^found}}
+<p style="text-align:center">No trips recorded for this route and hour.</p>
+{{/found}}
+{{/route}}
+</body>
+</html>

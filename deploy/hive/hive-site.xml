@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+  Shared by the metastore and HiveServer2 containers. The first block keeps the
+  apache/hive image defaults (local Tez, no Hadoop cluster); the rest points both
+  services at the Postgres-backed metastore and the shared /data/warehouse.
+-->
+<configuration>
+  <!-- apache/hive image defaults -->
+  <property><name>hive.server2.enable.doAs</name><value>false</value></property>
+  <property><name>hive.tez.exec.inplace.progress</name><value>false</value></property>
+  <property><name>hive.exec.scratchdir</name><value>/opt/hive/scratch_dir</value></property>
+  <property><name>hive.user.install.directory</name><value>/opt/hive/install_dir</value></property>
+  <property><name>tez.runtime.optimize.local.fetch</name><value>true</value></property>
+  <property><name>hive.exec.submit.local.task.via.child</name><value>false</value></property>
+  <property><name>mapreduce.framework.name</name><value>local</value></property>
+  <property><name>tez.local.mode</name><value>true</value></property>
+  <property><name>hive.execution.engine</name><value>tez</value></property>
+  <property><name>metastore.metastore.event.db.notification.api.auth</name><value>false</value></property>
+
+  <!-- Metastore database -->
+  <property><name>javax.jdo.option.ConnectionDriverName</name><value>org.postgresql.Driver</value></property>
+  <property><name>javax.jdo.option.ConnectionURL</name><value>jdbc:postgresql://postgres:5432/metastore</value></property>
+  <property><name>javax.jdo.option.ConnectionUserName</name><value>hive</value></property>
+  <property><name>javax.jdo.option.ConnectionPassword</name><value>hive</value></property>
+
+  <!-- Where HiveServer2 (and Spark) find the metastore -->
+  <property><name>hive.metastore.uris</name><value>thrift://hive-metastore:9083</value></property>
+
+  <!-- Same absolute path is mounted in every container that reads or writes table data -->
+  <property><name>hive.metastore.warehouse.dir</name><value>file:///data/warehouse</value></property>
+  <property><name>hive.metastore.warehouse.external.dir</name><value>file:///data/warehouse</value></property>
+</configuration>

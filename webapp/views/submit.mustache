@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>NYC HVFHV Trip Report</title>
+    <link type="text/css" rel="stylesheet" href="elegant-aero.css" />
+    <script>
+      function resizeIframe(obj) {
+        obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
+      }
+    </script>
+  </head>
+  <body style='background-image:url("background.jpg");background-position:center bottom;background-size: 100%;'>
+    <form action="/trip-results.html" method="get" target="results_iframe" class="elegant-aero"
+          style="width:500px;margin:0 auto;padding:30px;background:#FFFFFF;border-radius:5px;box-shadow:0 0 10px rgba(0,0,0,0.1)">
+      <div style="margin-bottom:15px">
+        <label style="display:block">
+          <span style="display:block;margin-bottom:5px">Carrier:</span>
+          <input list="carriers" name="carrier" required style="width:100%;padding:8px;box-sizing:border-box"/>
+          <datalist id="carriers">
+            {{#carriers}}
+            <option value="{{.}}">
+            {{/carriers}}
+          </datalist>
+        </label>
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block">
+          <span style="display:block;margin-bottom:5px">Pickup Location:</span>
+          <input list="zones" name="pickup_location" required style="width:100%;padding:8px;box-sizing:border-box"/>
+        </label>
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block">
+          <span style="display:block;margin-bottom:5px">Dropoff Location:</span>
+          <input list="zones" name="dropoff_location" required style="width:100%;padding:8px;box-sizing:border-box"/>
+        </label>
+        <datalist id="zones">
+          {{#zones}}
+          <option value="{{.}}">
+          {{/zones}}
+        </datalist>
+      </div>
+      <div style="margin-bottom:15px">
+        <label style="display:block">
+          <span style="display:block;margin-bottom:5px">Hour of Day:</span>
+          <input list="hours" name="hour" required inputmode="numeric" style="width:100%;padding:8px;box-sizing:border-box"/>
+          <datalist id="hours">
+            {{#hours}}
+            <option value="{{.}}">
+            {{/hours}}
+          </datalist>
+        </label>
+      </div>
+      <div style="text-align:center;margin-top:20px">
+        <input type="submit" value="Submit"
+               style="padding:10px 20px;cursor:pointer;background:#2196F3;color:white;border:none;border-radius:4px">
+      </div>
+    </form>
+
+    <iframe name="results_iframe" title="Results" frameBorder="0" onload="resizeIframe(this)"
+            style="display:block;width:100%;margin:20px auto 0"></iframe>
+  </body>
+</html>
